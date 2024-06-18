@@ -355,3 +355,8 @@ export default function Home() {
 This ensures that we can only access the WASM methods after its initialization.
 
 That's it! Now you have your WASM module running in various environments.
+
+References:
+  - [wasm-bindgen guide](https://rustwasm.github.io/wasm-bindgen/examples/hello-world.html)
+  - [wasm-pack docs](https://rustwasm.github.io/docs/wasm-pack/)
+  - [rustwasm guide](https://rustwasm.github.io/docs/book/)
