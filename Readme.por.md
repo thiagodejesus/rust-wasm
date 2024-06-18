@@ -1,10 +1,10 @@
-# How to Use Rust with TypeScript
+# Como usar Rust com typescript
 
-Today we gonna navigating into some ways to use Rust on typescript projects with WASM.
+Hoje vamos ver algumas formas de usar Rust com Typescript através de WASM.
 
-## 1. Creating the Rust Wasm Package
+## 1. Criando o projeto WASM em Rust
 
-First, we gonna create a new Rust project and navigate into it:
+Primeiro vamos criar um novo projeto e navegar pra dentro dele:
 
 ```sh
   mkdir wasm-calc && \
@@ -12,7 +12,7 @@ First, we gonna create a new Rust project and navigate into it:
   cargo new --lib rust-calc
 ```
 
-Open the project in your preferred IDE. Replace the contents of `lib.rs` with the following code:
+Abra o projeto na sua IDE de preferência, substitua os conteúdos de `lib.rs` pelo código abaixo:
 
 ```rust
 pub fn sum(left: i32, right: i32) -> i32 {
@@ -61,20 +61,20 @@ mod tests {
 }
 ```
 
-Next, we gonna prepare the crate to be exported as WebAssembly (Wasm) by adding [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen), a crate that provides facilities to generate bindings to javascript.
+Agora, vamos preparar a crate (pacotes no universo do Rust) para ser exportada pra o WASM, vamos adicionar a crate [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen) que te traz algumas facilidades pra trabalhar com os bindings.
 
 ```sh
   cargo add wasm-bindgen
 ```
 
-Modify the `Cargo.toml` to include the `crate-type = ["cdylib"]`, this is a instruction to rust compiler to work in a way that generates artifacts compatible with WASM. _[Ref](https://users.rust-lang.org/t/why-do-i-need-to-set-the-crate-type-to-cdylib-to-build-a-wasm-binary/93247)_
+Modifique o `Cargo.toml` pra incluir `crate-type = ["cdylib"]`, essa é uma instrução pra o compilador do Rust trabalhar de uma forma que gera artefatos compatíveis com WASM. _[Ref](https://users.rust-lang.org/t/why-do-i-need-to-set-the-crate-type-to-cdylib-to-build-a-wasm-binary/93247)_
 
 ```toml
 [lib]
 crate-type = ["cdylib"]
 ```
 
-Update `lib.rs` to use `wasm_bindgen`:
+Atualize `lib.rs` pra usar `wasm_bindgen`:
 
 ```rust
 use wasm_bindgen::prelude::*;
@@ -100,15 +100,15 @@ pub fn divide(left: i32, right: i32) -> i32 {
 }
 ```
 
-Now, build the package using [wasm-pack](https://github.com/rustwasm/wasm-pack), a crate that helps to build wasm to the different javascript environments.
+Agora vamos buildar o projeto usando [wasm-pack](https://github.com/rustwasm/wasm-pack), uma crate que ajuda nos builds pra diferentes ambientes JS.
 
 ```sh
   wasm-pack build --out-dir target/pkg-node --target nodejs
 ```
 
-## 2. Using the WASM package in Node.js
+## 2. Usando o WASM no NodeJs
 
-Create a new Node.js project:
+Crie um novo projeto Node:
 
 ```sh
   cd ../ && \
@@ -120,13 +120,13 @@ Create a new Node.js project:
   touch index.ts
 ```
 
-Add the Rust package as a dependency:
+Adicione o pkg gerado como dependência:
 
 ```sh
   npm add ../rust-calc/target/pkg-node
 ```
 
-Import and use the Rust functions in `index.ts`:
+Importe e use as funções feitas no Rust em `index.ts`:
 
 ```typescript
 import { sum, divide, multiply, subtract } from "rust-calc";
@@ -137,26 +137,26 @@ console.log("1 * 2: ", multiply(1, 2)); // 2
 console.log("1 / 2: ", divide(1, 2)); // 0
 ```
 
-Run the Node.js application:
+Rode:
 
 ```sh
 npx tsc && node index.js
 ```
 
-Thats it, its really easy to use Rust with nodeJs, almost looks like magic.
+É isso, bem fácil rodar WASM no node usando essas crates, parece até mágica.
 
-## 3. Using the WASM in Vanilla JavaScript for the Web
+## 3. Usando o WASM com javascript vanilla na web
 
-Build the WebAssembly package for web targets:
+Builde o WASM com o target web:
 
 ```sh
 cd ../rust-calc
 wasm-pack build --out-dir target/pkg-web --target web
 ```
 
-Here we generated a different pkg, `pkg-web` as the target `web` differs a little from the target `nodejs`, so we can differ when importing them on the respective projects
+Aqui geramos um pkg diferente, `pkg-web`, já que o target `web` difere do target `nodejs`, daí podemos importar os relevantes em cada projeto.
 
-Create a new project for the web:
+Create um novo projeto web:
 
 ```sh
   cd ../ && \
@@ -165,7 +165,7 @@ Create a new project for the web:
   touch index.html
 ```
 
-Create an `index.html` file with the following content:
+Create um `index.html` com o seguinte conteúdo:
 
 ```html
 <!DOCTYPE html>
@@ -199,33 +199,34 @@ Create an `index.html` file with the following content:
 </html>
 ```
 
-Serve the `index.html` file using a simple server like [miniserve](https://github.com/svenstaro/miniserve), we can't open directly the index.html with our browsers, because the WASM needs to be loaded, and when opening directly, we receive a cors when getting the WASM file
+Rode o `index.html` usando um server, por exemplo [miniserve](https://github.com/svenstaro/miniserve). A gente não pode abrir diretamente o html com o browser, pois o WASM precisa ser carregado, e pra isso precisamos pegar o arquivo `.wasm`, entretanto, abrindo diretamente com o navegador tomamos um CORS.
+
 
 ```sh
   cd ../
   miniserve . --index "vanilla-js-rust-calc/index.html" -p 8080
 ```
 
-Open [http://localhost:8080](http://localhost:8080) in your browser and check the console.
+Abra [http://localhost:8080](http://localhost:8080) no seu navegador e veja a saída no console.
 
-Thats it, on the vanilla we need to manually init the WASM before use it, while on nodeJs we just plug and play, what happens is that on NodeJs the WASM is initialized under the hood with direct access to the file system that node has.
+É isso, para rodar no JS vanilla precisamos inicializar o WASM manualmente antes de o usarmos, enquanto que no Node isso acontece por baixo dos panos, já que o Node tem acesso direto ao sistema de arquivos.
 
-## 4. Using the WASM in Next.js
+## 4. Usando o WASM no NextJs
 
-Create a new Next.js project:
+Crie um novo projeto NextJs:
 
 ```sh
   npx create-next-app@14.2.4 nextjs-rust-calc --use-npm
 ```
 
-Navigate to the project directory and add the Rust package:
+Navege até o projeto e adicione a dependênca do WASM:
 
 ```sh
   cd nextjs-rust-calc && \
   npm add ../rust-calc/target/pkg-web
 ```
 
-Replace the content of `page.tsx` with:
+Substitua o conteúdo de `page.tsx` por:
 
 ```tsx
 import { sum, subtract, multiply, divide } from "rust-calc";
@@ -234,7 +235,7 @@ export default function Home() {
   console.log("1 + 2: ", sum(1, 2)); // 3
   console.log("1 - 2: ", subtract(1, 2)); // -1
   console.log("1 * 2: ", multiply(1, 2)); // 2
-  console.log("1 / 2: ", divide(1, 2)); // 0 As the rust function is working with integers, we gonna receive 0 instead of 0.5
+  console.log("1 / 2: ", divide(1, 2)); // Como estamos usando inteiros no Rust, o esperado é receber 0 ao invés de 0.5
 
   return (
     <main>
@@ -244,9 +245,9 @@ export default function Home() {
 }
 ```
 
-This code won't work, because as we saw on the Vanilla JS example, using the web build, we need to initialize the WASM first, so lets do this.
+Esse cógigo não vai funcionar, pois, como vimos no JS vanilla, precisamos inicializar o WASM primeiro, vamos fazer isso então:
 
-Modify `page.tsx` as follows:
+Modifique `page.tsx` como abaixo:
 
 ```tsx
 "use client";
@@ -272,12 +273,12 @@ export default function Home() {
 }
 ```
 
-As the WASM initialization is an asynchronous process, i put it inside a useEffect Hook.
-There is a possible problem with this approach, at some point someone may try to use the rust-calc functions without the proper initialization, so, lets do a workaround to make sure that the WASM is always initialized when some of its functions is called.
+Como a inicialização do WASM é um processo assíncrono, eu a coloquei dentro de um useEffect.
+Tem um possível problema com a abordagem acima, em algum momento alguém pode tentar as funções do rust-calc sem a devida inicialização do WASM, então vamos fazer um ajuste pra grantir que as funções só fiquem disponíveis após o WASM ser inicializado.
 
-We gonna create a TS package wrapping the WASM and exporting all functions only after the initialization
+Vamos criar uma lib em TS, envolvendo o WASM e exportando todas as funções apenas após a inicialização:
 
-Lets create our typescript package:
+Vamo criar nossa lib TS:
 
 ```sh
   cd ../ && \
@@ -289,36 +290,36 @@ Lets create our typescript package:
   touch index.ts
 ```
 
-In `tsconfig.json`, set `"declaration": true`, and in `package.json`, add `"types": "index.d.ts"`.
+Dentro de `tsconfig.json`, marque `"declaration": true`, e no `package.json`, adicione `"types": "index.d.ts"`.
 
-Add the Rust package as a dependency:
+Adicione o rust-calc como dependência:
 
 ```sh
   npm add ../rust-calc/target/pkg-web
 ```
 
-Create `index.ts` with the following content:
+Crie um `index.ts` com o seguitne conteúdo:
 
 ```ts
-  import * as rustCalc from "rust-calc";
+import * as rustCalc from "rust-calc";
 
-  export const instantiate = async () => {
-    const { default: init, initSync: _, ...lib } = rustCalc;
+export const instantiate = async () => {
+  const { default: init, initSync: _, ...lib } = rustCalc;
 
-    await init();
-    return lib;
-  };
+  await init();
+  return lib;
+};
 
-  export default instantiate;
+export default instantiate;
 ```
 
-Compile the TypeScript project:
+Compile o projeto:
 
 ```sh
   npx tsc
 ```
 
-In your Next.js project, remove the direct Rust package dependency and add the TypeScript wrapper:
+No seu projeto Next, remova antiga dependência do rust-calc e adicione a do TS:
 
 ```sh
   cd ../nextjs-rust-calc && \
@@ -326,7 +327,7 @@ In your Next.js project, remove the direct Rust package dependency and add the T
   npm add ../ts-calc
 ```
 
-Update `page.tsx` to use the wrapper:
+Atualize o `page.tsx` pra usar o `ts-calc`:
 
 ```tsx
   "use client";
@@ -352,11 +353,9 @@ Update `page.tsx` to use the wrapper:
   }
 ```
 
-This ensures that we can only access the WASM methods after its initialization.
+É isso, agora temos a garantia de que só acessaremos as funções após o WASM ser inicializado, tá aí um módulo WASM rodando em vários ambientes.
 
-That's it! Now you have your WASM module running in various environments.
-
-References:
+Referências:
   - [wasm-bindgen guide](https://rustwasm.github.io/wasm-bindgen/examples/hello-world.html)
   - [wasm-pack docs](https://rustwasm.github.io/docs/wasm-pack/)
   - [rustwasm guide](https://rustwasm.github.io/docs/book/)
