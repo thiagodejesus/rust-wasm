@@ -1,6 +1,10 @@
-How to use Rust from typescript
+# How to Use Rust with TypeScript
 
-# 1 Creating Rust Wasm pkg
+Today we gonna navigating into some ways to use Rust on typescript projects with WASM.
+
+## 1. Creating the Rust Wasm Package
+
+First, we gonna create a new Rust project and navigate into it:
 
 ```sh
   mkdir wasm-calc && \
@@ -8,12 +12,9 @@ How to use Rust from typescript
   cargo new --lib rust-calc
 ```
 
-Open the project on the IDE of you preference
-Then lets change the template to have sum, subtract, multiplication and division
+Open the project in your preferred IDE. Replace the contents of `lib.rs` with the following code:
 
-Replace the lib.rs with the code below
-
-```rs
+```rust
 pub fn sum(left: i32, right: i32) -> i32 {
     left + right
 }
@@ -60,24 +61,22 @@ mod tests {
 }
 ```
 
-Our rust crate is almost ready, now we need to prepare it to be exported as wasm. For this we gonna use the crate wasm-bindgen to auto generate the binds
+Next, we gonna prepare the crate to be exported as WebAssembly (Wasm) by adding [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen), a crate that provides facilities to generate bindings to javascript.
 
-`cargo add wasm-bindgen`
+```sh
+  cargo add wasm-bindgen
+```
 
-we now gonna add the wasm_bindgen macro on the functions to generate the bindings, so the code gona stay like this
-
-we need to put the below instruction on our Cargo.toml
+Modify the `Cargo.toml` to include the `crate-type = ["cdylib"]`, this is a instruction to rust compiler to work in a way that generates artifacts compatible with WASM. _[Ref](https://users.rust-lang.org/t/why-do-i-need-to-set-the-crate-type-to-cdylib-to-build-a-wasm-binary/93247)_
 
 ```toml
 [lib]
 crate-type = ["cdylib"]
 ```
 
-this is info to rust compiler generate the result in a specific way that fits better the needs of wasm. [For more info](https://users.rust-lang.org/t/why-do-i-need-to-set-the-crate-type-to-cdylib-to-build-a-wasm-binary/93247/7)
+Update `lib.rs` to use `wasm_bindgen`:
 
-Now we gonna apply the macros to generate the wasm bindings for our calc functions, the code gonna be like:
-
-```rs
+```rust
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -99,18 +98,17 @@ pub fn multiply(left: i32, right: i32) -> i32 {
 pub fn divide(left: i32, right: i32) -> i32 {
     left / right
 }
-...
 ```
 
-There it are, lets generate the package, for this we gonna use (wasm-pack)[https://github.com/rustwasm/wasm-pack] a rust crate for build our wasm packages.
+Now, build the package using [wasm-pack](https://github.com/rustwasm/wasm-pack), a crate that helps to build wasm to the different javascript environments.
 
-Follow the installation guide on their github repository if you don't have it yet
+```sh
+  wasm-pack build --out-dir target/pkg-node --target nodejs
+```
 
-# 2 Using it On NodeJs
+## 2. Using the Package in Node.js
 
-So, lets export our wasm for node, we gonna do it running the command `wasm-pack build --out-dir target/pkg-node --target nodejs`
-
-Now we gonna create a Nodejs app to consume our first exported pkg.
+Create a new Node.js project:
 
 ```sh
   cd ../ && \
@@ -122,32 +120,43 @@ Now we gonna create a Nodejs app to consume our first exported pkg.
   touch index.ts
 ```
 
-Now we gonna add our pkg as dependecy
-`  npm add ../rust-calc/target/pkg-node`
+Add the Rust package as a dependency:
 
-lets import our rust function and use them
+```sh
+  npm add ../rust-calc/target/pkg-node
+```
 
-```ts
+Import and use the Rust functions in `index.ts`:
+
+```typescript
 import { sum, divide, multiply, subtract } from "rust-calc";
 
 console.log("1 + 2: ", sum(1, 2)); // 3
 console.log("1 - 2: ", subtract(1, 2)); // -1
 console.log("1 * 2: ", multiply(1, 2)); // 2
-console.log("1 / 2: ", divide(1, 2)); // 0 As the rust function is working with integers, we gonna receive 0 instead of 0.5
+console.log("1 / 2: ", divide(1, 2)); // 0
 ```
 
-now running `npx tsc && node index.js` it should work, just like magic, is not it?
-Ok, i think that this is really beautiful
+Run the Node.js application:
 
-# 3 Using it On Web Vanilla JS
+```sh
+npx tsc && node index.js
+```
 
-`cd ../rust-calc`
+Thats it, its really easy to use Rust with nodeJs, almost looks like magic.
 
-`wasm-pack build --out-dir target/pkg-web --target web`
+## 3. Using the Package in Vanilla JavaScript for the Web
 
-Time to put it to run on the browser
+Build the WebAssembly package for web targets:
 
-lets create our vanilla-js-rust-calc
+```sh
+cd ../rust-calc
+wasm-pack build --out-dir target/pkg-web --target web
+```
+
+Here we generated a different pkg, `pkg-web` as the target `web` differs a little from the target `nodejs`, so we can differ when importing them on the respective projects
+
+Create a new project for the web:
 
 ```sh
   cd ../ && \
@@ -156,9 +165,10 @@ lets create our vanilla-js-rust-calc
   touch index.html
 ```
 
-In our index.html we gonna have:
+Create an `index.html` file with the following content:
 
 ```html
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -167,15 +177,7 @@ In our index.html we gonna have:
   <body>
     <h1>Vanilla JS Rust Calc</h1>
     <p>Open the console to see the output</p>
-    <!-- Note the usage of `type=module` here as this is an ES6 module -->
     <script type="module">
-      // Use ES module import syntax to import functionality from the module
-      // that we have compiled.
-      //
-      // Note that the `default` import is an initialization function which
-      // will "boot" the module and make it ready to use. Currently browsers
-      // don't support natively imported WebAssembly as an ES module, but
-      // eventually the manual initialization won't be required!
       import init, {
         sum,
         subtract,
@@ -184,36 +186,7 @@ In our index.html we gonna have:
       } from "../rust-calc/target/pkg-web/rust_calc.js";
 
       async function run() {
-        // First up we need to actually load the wasm file, so we use the
-        // default export to inform it where the wasm file is located on the
-        // server, and then we wait on the returned promise to wait for the
-        // wasm to be loaded.
-        //
-        // It may look like this: `await init('./pkg/without_a_bundler_bg.wasm');`,
-        // but there is also a handy default inside `init` function, which uses
-        // `import.meta` to locate the wasm file relatively to js file.
-        //
-        // Note that instead of a string you can also pass in any of the
-        // following things:
-        //
-        // * `WebAssembly.Module`
-        //
-        // * `ArrayBuffer`
-        //
-        // * `Response`
-        //
-        // * `Promise` which returns any of the above, e.g. `fetch("./path/to/wasm")`
-        //
-        // This gives you complete control over how the module is loaded
-        // and compiled.
-        //
-        // Also note that the promise, when resolved, yields the wasm module's
-        // exports which is the same as importing the `*_bg` module in other
-        // modes
         await init();
-
-        // And afterwards we can use all the functionality defined in wasm.
-
         console.log("1 + 2: ", sum(1, 2)); // 3
         console.log("1 - 2: ", subtract(1, 2)); // -1
         console.log("1 * 2: ", multiply(1, 2)); // 2
@@ -226,28 +199,33 @@ In our index.html we gonna have:
 </html>
 ```
 
-Now we needs to open this html behind a server, or we gonna receive a CORS error when trying to get the file.
+Serve the `index.html` file using a simple server like [miniserve](https://github.com/svenstaro/miniserve), we can't open directly the index.html with our browsers, because the WASM needs to be loaded, and when opening directly, we receive a cors when getting the WASM file
 
-to do so i am using a rust crate called [miniserve](https://crates.io/crates/miniserve)
-`cd ../`
-so we can run `miniserve . --index "vanilla-js-rust-calc/index.html" -p 8080` on the root of our project
+```sh
+  cd ../
+  miniserve . --index "vanilla-js-rust-calc/index.html" -p 8080
+```
 
-Now if we open [the page](http://localhost:8080) and check the console, we gonna see our expected result.
+Open [http://localhost:8080](http://localhost:8080) in your browser and check the console.
 
-# 4 Using it On Next Js
+Thats it, on the vanilla we need to manually init the WASM before use it, while on nodeJs we just plug and play, what happens is that on NodeJs the WASM is initialized under the hood with direct access to the file system that node has.
+
+## 4. Using the Package in Next.js
+
+Create a new Next.js project:
 
 ```sh
   npx create-next-app@14.2.4 nextjs-rust-calc --use-npm
 ```
 
-Press enter on the prompts to use all the defaults
+Navigate to the project directory and add the Rust package:
 
 ```sh
   cd nextjs-rust-calc && \
   npm add ../rust-calc/target/pkg-web
 ```
 
-Open the page.tsx on your preferred editor and replace the code in there for
+Replace the content of `page.tsx` with:
 
 ```tsx
 import { sum, subtract, multiply, divide } from "rust-calc";
@@ -266,11 +244,9 @@ export default function Home() {
 }
 ```
 
-If we try to run our app now, we gonna receive some errors like `Cannot read properties of undefined (reading 'sum')`.
+This code won't work, because as we saw on the Vanilla JS example, using the web build, we need to initialize the WASM first, so lets do this.
 
-This is because we need to initialize the wasm first, on the node version its made under the hood using fs, but on the web version we need to get the wasm file on the server and made it available for javascript. For this we can get the default exported function `init`.
-
-Lets apply some changes to fix this.
+Modify `page.tsx` as follows:
 
 ```tsx
 "use client";
@@ -296,11 +272,12 @@ export default function Home() {
 }
 ```
 
-I put the code inside a useEffect because the init is asynchronous so we con properly await its initialization and run the code after it.
+As the WASM initialization is an asynchronous process, i put it inside a useEffect Hook.
+There is a possible problem with this approach, at some point someone may try to use the rust-calc functions without the proper initialization, so, lets do a workaround to make sure that the WASM is always initialized when some of its functions is called.
 
-Thats it, we have our WASM running on next.
+We gonna create a TS package wrapping the WASM and exporting all functions only after the initialization
 
-To improve the usability of our lib:
+Lets create our typescript package:
 
 ```sh
   cd ../ && \
@@ -312,12 +289,15 @@ To improve the usability of our lib:
   touch index.ts
 ```
 
-on tsConfig and mark `declaration` as true
-on package.json add option `"types": "index.d.ts"`
+In `tsconfig.json`, set `"declaration": true`, and in `package.json`, add `"types": "index.d.ts"`.
 
-`npm add ../rust-calc/target/pkg-web`
+Add the Rust package as a dependency:
 
-Paste the below cod on index.ts
+```sh
+npm add ../rust-calc/target/pkg-web
+```
+
+Create `index.ts` with the following content:
 
 ```ts
 import * as rustCalc from "rust-calc";
@@ -332,17 +312,21 @@ export const instantiate = async () => {
 export default instantiate;
 ```
 
-and run `npx tsc`
-
-Now from our next project we can import the lib from 'ts-calc' instead of 'rust-calc' direct
+Compile the TypeScript project:
 
 ```sh
-cd ../ && \
-cd nextjs-rust-calc && \
-npm remove rust-calc && npm add ../ts-calc
+  npx tsc
 ```
 
-Now change the page.tsx to be:
+In your Next.js project, remove the direct Rust package dependency and add the TypeScript wrapper:
+
+```sh
+  cd ../nextjs-rust-calc && \
+  npm remove rust-ccalc && \
+  npm add ../ts-calc
+```
+
+Update `page.tsx` to use the wrapper:
 
 ```tsx
 "use client";
@@ -368,6 +352,6 @@ export default function Home() {
 }
 ```
 
-Now we make sure that nobody will accidentaly use the function without instantiate the wasm.
+This ensures that we can only access the WASM methods after its initialization.
 
-Thats it, thanks
+That's it! Now you have your WASM module running in various environments.
